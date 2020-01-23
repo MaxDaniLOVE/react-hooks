@@ -75,17 +75,24 @@ const App = () => {
 //   }
 // }
 
-const PlanetName = ({id}) => {
+
+// ! CUSTOM HOOK
+const usePlanetHook = (id) => {
   const [planet, setPlanet] = useState(0)    
-    useEffect(() => {
-      let canceled = false;
-      fetch(`https://swapi.co/api/planets/${id}/`)
-        .then((res) => res.json())
-        .then((data) => {
-          !canceled && setPlanet(data.name)
-        })
-        return () => canceled=true
-    }, [id])
+  useEffect(() => {
+    let canceled = false;
+    fetch(`https://swapi.co/api/planets/${id}/`)
+      .then((res) => res.json())
+      .then((data) => {
+        !canceled && setPlanet(data.name)
+      })
+      return () => canceled=true
+  }, [id])
+  return planet;
+}
+
+const PlanetName = ({id}) => {
+  const planet = usePlanetHook(id)
   return <h1>{planet}</h1>
 }
 
