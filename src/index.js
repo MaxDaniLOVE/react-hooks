@@ -1,4 +1,11 @@
-import React, {useState, Component, useEffect} from 'react';
+import React, 
+{
+  useState, 
+  Component, 
+  useEffect, 
+  useCallback, 
+  useMemo
+} from 'react';
 import ReactDOM from 'react-dom';
 const App = () => {
   const [id, setId] = useState(1)
@@ -77,23 +84,54 @@ const App = () => {
 
 
 // ! CUSTOM HOOK
-const usePlanetHook = (id) => {
-  const [planet, setPlanet] = useState(0)    
+const getPlanet = (id) => {
+  return fetch(`https://swapi.co/api/planets/${id}/`)
+    .then((res) => res.json())
+    .then((data) => data)
+  }
+
+const useRequest = (request) => {
+  const initialState = useMemo(() => ({ // ! CASH RESULTS OF FUNCTIONS
+    data: null,
+    loading: true,
+    error: null
+  }), [])
+  const [dataState, setDataState] = useState(initialState)    
   useEffect(() => {
+    setDataState(initialState)
     let canceled = false;
-    fetch(`https://swapi.co/api/planets/${id}/`)
-      .then((res) => res.json())
-      .then((data) => {
-        !canceled && setPlanet(data.name)
+      request()
+      .then((data) => !canceled && setDataState({
+        data,
+        loading: false,
+        error: null
+      }))
+      .catch((e) => {
+        !canceled && setDataState({
+          data: null,
+          loading: false,
+          error: true
+        })
       })
       return () => canceled=true
-  }, [id])
-  return planet;
+  }, [request])
+  return dataState;
+}
+
+const usePlanetHook = (id) => {
+  const request = useCallback(() => getPlanet(id), [ id ]) // ! IF _ID_ UPDATES STARTS NEW FUNCTION
+  return useRequest(request)
 }
 
 const PlanetName = ({id}) => {
-  const planet = usePlanetHook(id)
-  return <h1>{planet}</h1>
+  const {data, loading, error} = usePlanetHook(id)
+  if (loading) {
+    return <div>loading...</div>
+  }
+  if (error) {
+    return <div>error</div>
+  }
+  return <h1>{data.name}</h1>
 }
 
 ReactDOM.render(<App />, document.getElementById('root'));
